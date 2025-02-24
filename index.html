@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>簡易評分系統</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .button {
+            padding: 15px 30px;
+            font-size: 18px;
+            margin: 5px;
+            cursor: pointer;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 5px;
+        }
+        .score-button {
+            width: 60px;
+            height: 60px;
+            font-size: 24px;
+            margin: 5px;
+        }
+        .error {
+            color: red;
+            font-weight: bold;
+        }
+        .info {
+            background-color: #f0f0f0;
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 5px;
+        }
+    </style>
+</head>
+<body>
+<div id="judgeSelection">
+    <h2>請選擇評審編號</h2>
+    <div id="judgeButtons"></div>
+</div>
+
+<div id="scoringSection" style="display:none;">
+    <div class="info">
+        <p>評審: <span id="judgeId"></span></p>
+        <p>當前項目: <span id="currentItem"></span></p>
+        <p>當前隊伍: <span id="currentTeam"></span></p>
+    </div>
+    <h2>請評分</h2>
+    <div id="scoreButtons"></div>
+</div>
+
+<script>
+    // 設定
+    const SHEET_URL = 'YOUR_GOOGLE_SCRIPT_URL';
+    const JUDGES = 8;
+    const TEAMS = 10;
+    const ITEMS = 10;
+
+    let currentJudge = null;
+    let currentTeam = 1;
+    let currentItem = 1;
+
+    // 建立評審選擇按鈕
+    function createJudgeButtons() {
+        const container = document.getElementById('judgeButtons');
+        for (let i = 1; i <= JUDGES; i++) {
+            const btn = document.createElement('button');
+            btn.textContent = i;
+            btn.className = 'button';
+            btn.onclick = () => selectJudge(i);
+            container.appendChild(btn);
+        }
+    }
+
+    // 建立評分按鈕
+    function createScoreButtons() {
+        const container = document.getElementById('scoreButtons');
+        for (let i = 1; i <= 10; i++) {
+            const btn = document.createElement('button');
+            btn.textContent = i;
+            btn.className = 'button score-button';
+            btn.onclick = () => submitScore(i);
+            container.appendChild(btn);
+        }
+    }
+
+    // 選擇評審
+    function selectJudge(judge) {
+        currentJudge = judge;
+        document.getElementById('judgeSelection').style.display = 'none';
+        document.getElementById('scoringSection').style.display = 'block';
+        document.getElementById('judgeId').textContent = judge;
+        updateDisplay();
+    }
+
+    // 更新顯示
+    function updateDisplay() {
+        document.getElementById('currentTeam').textContent = currentTeam;
+        document.getElementById('currentItem').textContent = currentItem;
+    }
+
+    // 提交分數
+    function submitScore(score) {
+        const data = {
+            timestamp: new Date().toISOString(),
+            judge: currentJudge,
+            team: currentTeam,
+            item: currentItem,
+            score: score
+        };
+
+        // 送出到 Google Sheet
+        fetch(SHEET_URL, {
+            method: 'POST',
+            mode: 'no-cors',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(data)
+        })
+            .then(() => {
+                // 更新當前隊伍
+                if (currentTeam < TEAMS) {
+                    currentTeam++;
+                    updateDisplay();
+                } else {
+                    alert('已完成所有隊伍評分！');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('提交失敗，請重試');
+            });
+    }
+
+    // 初始化
+    window.onload = function() {
+        createJudgeButtons();
+        createScoreButtons();
+    };
+</script>
+</body>
+</html>
