@@ -1,129 +1,199 @@
 <!DOCTYPE html>
-<html>
+<html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>簡易評分系統</title>
+    <title>評分系統</title>
+    <!-- 使用 Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <style>
         body {
-            font-family: Arial, sans-serif;
-            max-width: 800px;
-            margin: 0 auto;
-            padding: 20px;
+            background-color: #f8f9fa;
+            font-family: 'Microsoft JhengHei', sans-serif;
         }
-        .button {
-            padding: 15px 30px;
-            font-size: 18px;
-            margin: 5px;
-            cursor: pointer;
-            background-color: #4CAF50;
-            color: white;
-            border: none;
-            border-radius: 5px;
+        .card {
+            border-radius: 15px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            margin-bottom: 20px;
         }
         .score-button {
+            width: 70px;
+            height: 70px;
+            margin: 5px;
+            font-size: 24px;
+            border-radius: 10px;
+            transition: all 0.3s;
+        }
+        .score-button:hover {
+            transform: scale(1.05);
+        }
+        .judge-button {
             width: 60px;
             height: 60px;
-            font-size: 24px;
-            margin: 5px;
+            margin: 10px;
+            font-size: 20px;
+            border-radius: 50%;
         }
-        .error {
-            color: red;
-            font-weight: bold;
+        .info-card {
+            background: linear-gradient(145deg, #ffffff, #f0f0f0);
+            padding: 20px;
+            border-radius: 15px;
+            margin-bottom: 20px;
         }
-        .info {
-            background-color: #f0f0f0;
-            padding: 10px;
-            margin: 10px 0;
-            border-radius: 5px;
+        .header {
+            background: linear-gradient(145deg, #007bff, #0056b3);
+            color: white;
+            padding: 20px;
+            border-radius: 15px;
+            margin-bottom: 30px;
         }
     </style>
 </head>
 <body>
-<div id="judgeSelection">
-    <h2>請選擇評審編號</h2>
-    <div id="judgeButtons"></div>
-</div>
+    <div class="container py-5">
+        <!-- 評審選擇畫面 -->
+        <div id="judgeSelection">
+            <div class="header text-center">
+                <h1 class="display-4">評分系統</h1>
+                <p class="lead">請選擇評審編號</p>
+            </div>
+            <div class="card">
+                <div class="card-body text-center" id="judgeButtons">
+                    <!-- 評審按鈕將由 JavaScript 產生 -->
+                </div>
+            </div>
+        </div>
 
-<div id="scoringSection" style="display:none;">
-    <div class="info">
-        <p>評審: <span id="judgeId"></span></p>
-        <p>當前項目: <span id="currentItem"></span></p>
-        <p>當前隊伍: <span id="currentTeam"></span></p>
+        <!-- 評分畫面 -->
+        <div id="scoringSection" style="display:none;">
+            <div class="header text-center">
+                <h2>評分系統</h2>
+            </div>
+            <div class="info-card">
+                <div class="row text-center">
+                    <div class="col-4">
+                        <h5>評審</h5>
+                        <p class="h3" id="judgeId"></p>
+                    </div>
+                    <div class="col-4">
+                        <h5>當前項目</h5>
+                        <p class="h3" id="currentItem"></p>
+                    </div>
+                    <div class="col-4">
+                        <h5>當前隊伍</h5>
+                        <p class="h3" id="currentTeam"></p>
+                    </div>
+                </div>
+            </div>
+            <div class="card">
+                <div class="card-body">
+                    <h3 class="card-title text-center mb-4">請評分</h3>
+                    <div class="text-center" id="scoreButtons">
+                        <!-- 評分按鈕將由 JavaScript 產生 -->
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
-    <h2>請評分</h2>
-    <div id="scoreButtons"></div>
-</div>
 
-<script>
-    // 設定
-    const SHEET_URL = 'YOUR_GOOGLE_SCRIPT_URL';
-    const JUDGES = 8;
-    const TEAMS = 10;
-    const ITEMS = 10;
-
-    let currentJudge = null;
-    let currentTeam = 1;
-    let currentItem = 1;
-
-    // 建立評審選擇按鈕
-    function createJudgeButtons() {
-        const container = document.getElementById('judgeButtons');
-        for (let i = 1; i <= JUDGES; i++) {
-            const btn = document.createElement('button');
-            btn.textContent = i;
-            btn.className = 'button';
-            btn.onclick = () => selectJudge(i);
-            container.appendChild(btn);
-        }
-    }
-
-    // 建立評分按鈕
-    function createScoreButtons() {
-        const container = document.getElementById('scoreButtons');
-        for (let i = 1; i <= 10; i++) {
-            const btn = document.createElement('button');
-            btn.textContent = i;
-            btn.className = 'button score-button';
-            btn.onclick = () => submitScore(i);
-            container.appendChild(btn);
-        }
-    }
-
-    // 選擇評審
-    function selectJudge(judge) {
-        currentJudge = judge;
-        document.getElementById('judgeSelection').style.display = 'none';
-        document.getElementById('scoringSection').style.display = 'block';
-        document.getElementById('judgeId').textContent = judge;
-        updateDisplay();
-    }
-
-    // 更新顯示
-    function updateDisplay() {
-        document.getElementById('currentTeam').textContent = currentTeam;
-        document.getElementById('currentItem').textContent = currentItem;
-    }
-
-    // 提交分數
-    function submitScore(score) {
-        const data = {
-            timestamp: new Date().toISOString(),
-            judge: currentJudge,
-            team: currentTeam,
-            item: currentItem,
-            score: score
+    <script>
+        // 配置
+        const SHEET_URL = 'YOUR_GOOGLE_SCRIPT_URL'; // 請替換成您的 Google Script URL
+        const JUDGES = 8;  // 評審數量
+        const TEAMS = 10;  // 隊伍數量
+        const ITEMS = {    // 評分項目配置
+            1: { start: '09:00', end: '11:00', name: '項目一' },
+            2: { start: '11:00', end: '13:00', name: '項目二' },
+            3: { start: '14:00', end: '16:00', name: '項目三' },
+            4: { start: '16:00', end: '18:00', name: '項目四' },
+            5: { start: '18:00', end: '20:00', name: '項目五' }
         };
 
-        // 送出到 Google Sheet
-        fetch(SHEET_URL, {
-            method: 'POST',
-            mode: 'no-cors',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(data)
-        })
+        let currentJudge = null;
+        let currentTeam = 1;
+        let currentItem = 1;
+
+        // 創建評審選擇按鈕
+        function createJudgeButtons() {
+            const container = document.getElementById('judgeButtons');
+            container.innerHTML = '<div class="d-flex flex-wrap justify-content-center">';
+            for (let i = 1; i <= JUDGES; i++) {
+                const btn = document.createElement('button');
+                btn.textContent = i;
+                btn.className = 'btn btn-primary judge-button';
+                btn.onclick = () => selectJudge(i);
+                container.appendChild(btn);
+            }
+        }
+
+        // 創建評分按鈕
+        function createScoreButtons() {
+            const container = document.getElementById('scoreButtons');
+            container.innerHTML = '<div class="d-flex flex-wrap justify-content-center">';
+            for (let i = 1; i <= 10; i++) {
+                const btn = document.createElement('button');
+                btn.textContent = i;
+                btn.className = 'btn btn-success score-button';
+                btn.onclick = () => submitScore(i);
+                container.appendChild(btn);
+            }
+        }
+
+        // 選擇評審
+        function selectJudge(judge) {
+            currentJudge = judge;
+            document.getElementById('judgeSelection').style.display = 'none';
+            document.getElementById('scoringSection').style.display = 'block';
+            document.getElementById('judgeId').textContent = judge;
+            updateDisplay();
+        }
+
+        // 更新顯示
+        function updateDisplay() {
+            document.getElementById('currentTeam').textContent = currentTeam;
+            document.getElementById('currentItem').textContent = `${currentItem}`;
+        }
+
+        // 檢查當前時間是否在評分時段
+        function checkTimeSlot() {
+            const now = new Date();
+            const currentHour = now.getHours();
+            const currentMinute = now.getMinutes();
+            const currentTime = `${String(currentHour).padStart(2, '0')}:${String(currentMinute).padStart(2, '0')}`;
+            
+            for (const [item, time] of Object.entries(ITEMS)) {
+                if (currentTime >= time.start && currentTime < time.end) {
+                    currentItem = parseInt(item);
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        // 提交分數
+        function submitScore(score) {
+            if (!checkTimeSlot()) {
+                alert('目前不在評分時間內！');
+                return;
+            }
+
+            const data = {
+                timestamp: new Date().toISOString(),
+                judge: currentJudge,
+                team: currentTeam,
+                item: currentItem,
+                score: score
+            };
+
+            // 送出到 Google Sheet
+            fetch(SHEET_URL, {
+                method: 'POST',
+                mode: 'no-cors',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(data)
+            })
             .then(() => {
                 // 更新當前隊伍
                 if (currentTeam < TEAMS) {
@@ -131,19 +201,29 @@
                     updateDisplay();
                 } else {
                     alert('已完成所有隊伍評分！');
+                    currentTeam = 1;
+                    updateDisplay();
                 }
             })
             .catch(error => {
                 console.error('Error:', error);
                 alert('提交失敗，請重試');
             });
-    }
+        }
 
-    // 初始化
-    window.onload = function() {
-        createJudgeButtons();
-        createScoreButtons();
-    };
-</script>
+        // 初始化
+        window.onload = function() {
+            createJudgeButtons();
+            createScoreButtons();
+            
+            // 每分鐘檢查一次時間
+            setInterval(() => {
+                checkTimeSlot();
+            }, 60000);
+        };
+    </script>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>
