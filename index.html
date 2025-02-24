@@ -26,6 +26,12 @@
             color: white;
         }
 
+        .header h1 span {
+            font-size: 12px;
+            color: white;
+            float: right;
+        }
+
         .current-time {
             background: rgba(255, 255, 255, 0.3);
             padding: 5px 15px;
@@ -162,7 +168,7 @@
 <!-- 評審選擇畫面 -->
 <div id="judgeSection" class="section active">
     <div class="header">
-        <h1>評分系統</h1>
+        <h1>評分系統<span>v1.0.1</span></h1>
         <div class="current-time" id="currentTime1"></div>
     </div>
     <div class="info-card">
@@ -174,7 +180,7 @@
 <!-- 隊伍選擇畫面 -->
 <div id="teamSection" class="section">
     <div class="header">
-        <h1>評分系統</h1>
+        <h1>評分系統<span>v1.0.1</span></h1>
         <div class="current-time" id="currentTime2"></div>
     </div>
     <div class="info-card">
@@ -190,7 +196,7 @@
 <!-- 評分畫面 -->
 <div id="scoringSection" class="section">
     <div class="header">
-        <h1>評分系統</h1>
+        <h1>評分系統<span>v1.0.1</span></h1>
         <div class="current-time" id="currentTime3"></div>
     </div>
     <div class="info-card">
@@ -214,7 +220,7 @@
 <!-- 評分完成畫面 -->
 <div id="completionSection" class="section">
     <div class="header">
-        <h1>評分系統</h1>
+        <h1>評分系統<span>v1.0.1</span></h1>
         <div class="current-time" id="currentTime4"></div>
     </div>
     <div class="info-card text-center">
@@ -243,16 +249,16 @@
     const JUDGES = ['評審 1', '評審 2', '評審 3', '評審 4', '評審 5', '評審 6', '評審 7', '評審 8'];
     const TEAMS = ['隊伍 A', '隊伍 B', '隊伍 C', '隊伍 D', '隊伍 E', '隊伍 F'];
     const ITEMS = [
-        { id: 1, name: '領袖測驗 1', date: '2025/02/24', start: '09:00', end: '11:00' },
-        { id: 2, name: '領袖測驗 2', date: '2025/02/24', start: '11:00', end: '13:00' },
-        { id: 3, name: '領袖測驗 3', date: '2025/02/24', start: '13:00', end: '15:00' },
-        { id: 4, name: '課堂表現 1', date: '2025/02/24', start: '15:00', end: '17:00' },
-        { id: 5, name: '課堂表現 2', date: '2025/02/24', start: '17:00', end: '19:00' },
-        { id: 6, name: '課堂表現 3', date: '2025/02/25', start: '09:00', end: '11:00' },
-        { id: 7, name: '課堂表現 4', date: '2025/02/25', start: '11:00', end: '13:00' },
-        { id: 8, name: '課堂表現 5', date: '2025/02/25', start: '13:00', end: '15:00' },
-        { id: 9, name: '晚會表演 (20%)', date: '2025/02/25', start: '15:00', end: '17:00' },
-        { id: 10, name: '成果展 (30%)', date: '2025/02/25', start: '17:00', end: '19:00' }
+        {id: 1, name: '領袖測驗 1', date: '2025/02/24', start: '09:00', end: '11:00'},
+        {id: 2, name: '領袖測驗 2', date: '2025/02/24', start: '11:00', end: '13:00'},
+        {id: 3, name: '領袖測驗 3', date: '2025/02/24', start: '13:00', end: '15:00'},
+        {id: 4, name: '課堂表現 1', date: '2025/02/24', start: '15:00', end: '17:00'},
+        {id: 5, name: '課堂表現 2', date: '2025/02/24', start: '17:00', end: '19:00'},
+        {id: 6, name: '課堂表現 3', date: '2025/02/25', start: '09:00', end: '11:00'},
+        {id: 7, name: '課堂表現 4', date: '2025/02/25', start: '11:00', end: '13:00'},
+        {id: 8, name: '課堂表現 5', date: '2025/02/25', start: '13:00', end: '15:00'},
+        {id: 9, name: '晚會表演 (20%)', date: '2025/02/25', start: '15:00', end: '17:00'},
+        {id: 10, name: '成果展 (30%)', date: '2025/02/25', start: '17:00', end: '19:00'}
     ];
 
     let currentJudge = null;
