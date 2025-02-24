@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>評分系統</title>
-    <!-- 使用 Bootstrap CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <style>
         body {
@@ -16,23 +15,12 @@
             box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
             margin-bottom: 20px;
         }
-        .score-button {
-            width: 70px;
-            height: 70px;
-            margin: 5px;
-            font-size: 24px;
-            border-radius: 10px;
-            transition: all 0.3s;
-        }
-        .score-button:hover {
-            transform: scale(1.05);
-        }
         .judge-button {
-            width: 60px;
+            width: 120px;
             height: 60px;
             margin: 10px;
-            font-size: 20px;
-            border-radius: 50%;
+            font-size: 18px;
+            border-radius: 10px;
         }
         .info-card {
             background: linear-gradient(145deg, #ffffff, #f0f0f0);
@@ -46,6 +34,36 @@
             padding: 20px;
             border-radius: 15px;
             margin-bottom: 30px;
+        }
+        .score-input {
+            font-size: 24px;
+            padding: 20px;
+            text-align: center;
+            border-radius: 10px;
+            border: 2px solid #007bff;
+            width: 150px;
+            margin: 0 auto;
+        }
+        .score-input:focus {
+            outline: none;
+            border-color: #0056b3;
+            box-shadow: 0 0 0 0.25rem rgba(0,123,255,.25);
+        }
+        .submit-btn {
+            font-size: 20px;
+            padding: 10px 40px;
+            margin-top: 20px;
+        }
+        .error-message {
+            color: #dc3545;
+            font-size: 16px;
+            margin-top: 10px;
+            min-height: 24px;
+        }
+        .item-name {
+            font-size: 1.2em;
+            font-weight: bold;
+            color: #0056b3;
         }
     </style>
 </head>
@@ -76,21 +94,21 @@
                         <p class="h3" id="judgeId"></p>
                     </div>
                     <div class="col-4">
-                        <h5>當前項目</h5>
-                        <p class="h3" id="currentItem"></p>
+                        <h5>項目</h5>
+                        <p class="item-name" id="currentItem"></p>
                     </div>
                     <div class="col-4">
-                        <h5>當前隊伍</h5>
+                        <h5>隊伍</h5>
                         <p class="h3" id="currentTeam"></p>
                     </div>
                 </div>
             </div>
             <div class="card">
-                <div class="card-body">
-                    <h3 class="card-title text-center mb-4">請評分</h3>
-                    <div class="text-center" id="scoreButtons">
-                        <!-- 評分按鈕將由 JavaScript 產生 -->
-                    </div>
+                <div class="card-body text-center">
+                    <h3 class="card-title mb-4">請評分 (1-100分)</h3>
+                    <input type="number" id="scoreInput" class="score-input" min="0" max="100" step="1">
+                    <div class="error-message" id="errorMessage"></div>
+                    <button onclick="submitScore()" class="btn btn-primary submit-btn">送出</button>
                 </div>
             </div>
         </div>
@@ -98,60 +116,65 @@
 
     <script>
         // 配置
-        const SHEET_URL = 'YOUR_GOOGLE_SCRIPT_URL'; // 請替換成您的 Google Script URL
-        const JUDGES = 8;  // 評審數量
-        const TEAMS = 10;  // 隊伍數量
-        const ITEMS = {    // 評分項目配置
-            1: { start: '09:00', end: '11:00', name: '項目一' },
-            2: { start: '11:00', end: '13:00', name: '項目二' },
-            3: { start: '14:00', end: '16:00', name: '項目三' },
-            4: { start: '16:00', end: '18:00', name: '項目四' },
-            5: { start: '18:00', end: '20:00', name: '項目五' }
-        };
+        const SHEET_URL = 'YOUR_GOOGLE_SCRIPT_URL';
+        const JUDGES = ['評審 1', '評審 2', '評審 3', '評審 4', '評審 5', '評審 6', '評審 7', '評審 8'];
+        const TEAMS = ['隊伍 A', '隊伍 B', '隊伍 C', '隊伍 D', '隊伍 E', '隊伍 F'];
+        const ITEMS = [
+            { id: 1, name: '領袖測驗 1', start: '09:00', end: '11:00', weight: 10 },
+            { id: 2, name: '領袖測驗 2', start: '11:00', end: '13:00', weight: 10 },
+            { id: 3, name: '領袖測驗 3', start: '13:00', end: '15:00', weight: 10 },
+            { id: 4, name: '課堂表現 1', start: '15:00', end: '17:00', weight: 5 },
+            { id: 5, name: '課堂表現 2', start: '17:00', end: '19:00', weight: 5 },
+            { id: 6, name: '課堂表現 3', start: '09:00', end: '11:00', weight: 5 },
+            { id: 7, name: '課堂表現 4', start: '11:00', end: '13:00', weight: 5 },
+            { id: 8, name: '課堂表現 5', start: '13:00', end: '15:00', weight: 5 },
+            { id: 9, name: '晚會表演 (20%)', start: '15:00', end: '17:00', weight: 20 },
+            { id: 10, name: '成果展 (30%)', start: '17:00', end: '19:00', weight: 30 }
+        ];
 
         let currentJudge = null;
-        let currentTeam = 1;
+        let currentTeam = 0;
         let currentItem = 1;
 
         // 創建評審選擇按鈕
         function createJudgeButtons() {
             const container = document.getElementById('judgeButtons');
             container.innerHTML = '<div class="d-flex flex-wrap justify-content-center">';
-            for (let i = 1; i <= JUDGES; i++) {
+            JUDGES.forEach((judge, index) => {
                 const btn = document.createElement('button');
-                btn.textContent = i;
+                btn.textContent = judge;
                 btn.className = 'btn btn-primary judge-button';
-                btn.onclick = () => selectJudge(i);
+                btn.onclick = () => selectJudge(index + 1);
                 container.appendChild(btn);
-            }
-        }
-
-        // 創建評分按鈕
-        function createScoreButtons() {
-            const container = document.getElementById('scoreButtons');
-            container.innerHTML = '<div class="d-flex flex-wrap justify-content-center">';
-            for (let i = 1; i <= 10; i++) {
-                const btn = document.createElement('button');
-                btn.textContent = i;
-                btn.className = 'btn btn-success score-button';
-                btn.onclick = () => submitScore(i);
-                container.appendChild(btn);
-            }
+            });
         }
 
         // 選擇評審
         function selectJudge(judge) {
             currentJudge = judge;
+            currentTeam = 0;
             document.getElementById('judgeSelection').style.display = 'none';
             document.getElementById('scoringSection').style.display = 'block';
-            document.getElementById('judgeId').textContent = judge;
+            document.getElementById('judgeId').textContent = JUDGES[judge - 1];
             updateDisplay();
+            
+            const input = document.getElementById('scoreInput');
+            input.addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    submitScore();
+                }
+            });
+            input.focus();
         }
 
         // 更新顯示
         function updateDisplay() {
-            document.getElementById('currentTeam').textContent = currentTeam;
-            document.getElementById('currentItem').textContent = `${currentItem}`;
+            document.getElementById('currentTeam').textContent = TEAMS[currentTeam];
+            const item = ITEMS.find(item => item.id === currentItem);
+            document.getElementById('currentItem').textContent = item.name;
+            document.getElementById('scoreInput').value = '';
+            document.getElementById('errorMessage').textContent = '';
+            document.getElementById('scoreInput').focus();
         }
 
         // 檢查當前時間是否在評分時段
@@ -161,28 +184,47 @@
             const currentMinute = now.getMinutes();
             const currentTime = `${String(currentHour).padStart(2, '0')}:${String(currentMinute).padStart(2, '0')}`;
             
-            for (const [item, time] of Object.entries(ITEMS)) {
-                if (currentTime >= time.start && currentTime < time.end) {
-                    currentItem = parseInt(item);
-                    return true;
-                }
+            const currentSlot = ITEMS.find(item => 
+                currentTime >= item.start && currentTime < item.end
+            );
+
+            if (currentSlot) {
+                currentItem = currentSlot.id;
+                return true;
             }
             return false;
         }
 
         // 提交分數
-        function submitScore(score) {
-            if (!checkTimeSlot()) {
-                alert('目前不在評分時間內！');
+        function submitScore() {
+            const scoreInput = document.getElementById('scoreInput');
+            const errorMessage = document.getElementById('errorMessage');
+            const score = parseInt(scoreInput.value);
+
+            // 驗證分數
+            if (scoreInput.value === '') {
+                errorMessage.textContent = '請輸入分數';
                 return;
+            }
+            if (isNaN(score) || score < 0 || score > 100) {
+                errorMessage.textContent = '請輸入1-100的分數';
+                return;
+            }
+
+            // 如果是0分，確認是否故意的
+            if (score === 0) {
+                if (!confirm('確定要給0分嗎？')) {
+                    return;
+                }
             }
 
             const data = {
                 timestamp: new Date().toISOString(),
-                judge: currentJudge,
-                team: currentTeam,
-                item: currentItem,
-                score: score
+                judge: JUDGES[currentJudge - 1],
+                team: TEAMS[currentTeam],
+                item: ITEMS[currentItem - 1].name,
+                score: score,
+                weight: ITEMS[currentItem - 1].weight
             };
 
             // 送出到 Google Sheet
@@ -195,35 +237,27 @@
                 body: JSON.stringify(data)
             })
             .then(() => {
-                // 更新當前隊伍
-                if (currentTeam < TEAMS) {
+                if (currentTeam < TEAMS.length - 1) {
                     currentTeam++;
                     updateDisplay();
                 } else {
                     alert('已完成所有隊伍評分！');
-                    currentTeam = 1;
+                    currentTeam = 0;
                     updateDisplay();
                 }
             })
             .catch(error => {
                 console.error('Error:', error);
-                alert('提交失敗，請重試');
+                errorMessage.textContent = '提交失敗，請重試';
             });
         }
 
         // 初始化
         window.onload = function() {
             createJudgeButtons();
-            createScoreButtons();
-            
-            // 每分鐘檢查一次時間
-            setInterval(() => {
-                checkTimeSlot();
-            }, 60000);
         };
     </script>
 
-    <!-- Bootstrap JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>
