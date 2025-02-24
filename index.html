@@ -169,7 +169,7 @@
 <!-- 非評審時間畫面 -->
 <div id="nonScoringSection" class="section">
     <div class="header">
-        <h1>評分系統<span>v1.0.2</span></h1>
+        <h1>評分系統<span>v1.0.3</span></h1>
         <div class="current-time" id="currentTime5"></div>
     </div>
     <div class="info-card text-center">
@@ -185,7 +185,7 @@
 <!-- 評審選擇畫面 -->
 <div id="judgeSection" class="section active">
     <div class="header">
-        <h1>評分系統<span>v1.0.2</span></h1>
+        <h1>評分系統<span>v1.0.3</span></h1>
         <div class="current-time" id="currentTime1"></div>
     </div>
     <div class="info-card">
@@ -197,7 +197,7 @@
 <!-- 隊伍選擇畫面 -->
 <div id="teamSection" class="section">
     <div class="header">
-        <h1>評分系統<span>v1.0.2</span></h1>
+        <h1>評分系統<span>v1.0.3</span></h1>
         <div class="current-time" id="currentTime2"></div>
     </div>
     <div class="info-card">
@@ -213,7 +213,7 @@
 <!-- 評分畫面 -->
 <div id="scoringSection" class="section">
     <div class="header">
-        <h1>評分系統<span>v1.0.2</span></h1>
+        <h1>評分系統<span>v1.0.3</span></h1>
         <div class="current-time" id="currentTime3"></div>
     </div>
     <div class="info-card">
@@ -237,7 +237,7 @@
 <!-- 評分完成畫面 -->
 <div id="completionSection" class="section">
     <div class="header">
-        <h1>評分系統<span>v1.0.2</span></h1>
+        <h1>評分系統<span>v1.0.3</span></h1>
         <div class="current-time" id="currentTime4"></div>
     </div>
     <div class="info-card text-center">
@@ -258,25 +258,48 @@
 <!-- 在 body 的最後加入 Loading 遮罩 -->
 <div class="loading-overlay" id="loadingOverlay">
     <div class="loading-spinner"></div>
-    <div class="loading-text">評分中...</div>
+    <div class="loading-text">Loading...</div>
 </div>
 
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+
 <script>
-    const SHEET_URL = 'https://script.google.com/macros/s/AKfycbw3IigSrDfF8isYzVSwb1LSoV9X0S8P70W2PF5UqjBDBo7fnTK5Zdw85ZZZCUSaqThI/exec';
-    const JUDGES = ['評審 1', '評審 2', '評審 3', '評審 4', '評審 5', '評審 6', '評審 7', '評審 8'];
-    const TEAMS = ['隊伍 A', '隊伍 B', '隊伍 C', '隊伍 D', '隊伍 E', '隊伍 F'];
-    const ITEMS = [
-        {id: 1, name: '領袖測驗 1', date: '2025/02/24', start: '00:01', end: '11:00'},
-        {id: 2, name: '領袖測驗 2', date: '2025/02/24', start: '11:00', end: '13:00'},
-        {id: 3, name: '領袖測驗 3', date: '2025/02/24', start: '13:00', end: '15:00'},
-        {id: 4, name: '課堂表現 1', date: '2025/02/24', start: '15:00', end: '17:00'},
-        {id: 5, name: '課堂表現 2', date: '2025/02/24', start: '18:00', end: '24:00'},
-        {id: 6, name: '課堂表現 3', date: '2025/02/25', start: '09:00', end: '11:00'},
-        {id: 7, name: '課堂表現 4', date: '2025/02/25', start: '11:00', end: '13:00'},
-        {id: 8, name: '課堂表現 5', date: '2025/02/25', start: '13:00', end: '15:00'},
-        {id: 9, name: '晚會表演 (20%)', date: '2025/02/25', start: '00:01', end: '17:00'},
-        {id: 10, name: '成果展 (30%)', date: '2025/02/25', start: '17:00', end: '24:00'}
-    ];
+    const SHEET_API_URL = 'https://script.google.com/macros/s/AKfycbx9gj_nPHWtwx1kdQJOoTG0xY8OvBoNWjbRxUJEDS1ToSznQL3j8pB8tLXfhBIujNkXcg/exec';
+
+    async function fetchAllData() {
+        try {
+            showLoading(true); // 顯示 Loading 畫面
+            const response = await fetch(SHEET_API_URL);
+            const result = await response.json();
+
+            if (result.status === "error") {
+                console.error("❌ 讀取資料失敗:", result.message);
+                return;
+            }
+
+            const { JUDGES, TEAMS, ITEMS } = result.data;
+
+            window.JUDGES = JUDGES.map(j => j["評審"]);
+            window.TEAMS = TEAMS.map(t => t["隊伍"]);
+            window.ITEMS = ITEMS.map(i => ({
+                id: Number(i["id"]),
+                name: i["name"],
+                date: i["date"],
+                start: formatTime(i["start"]), // 確保時間格式為 "HH:mm"
+                end: formatTime(i["end"])
+            }));
+
+            console.log("✅ 評審名單:", window.JUDGES);
+            console.log("✅ 隊伍名單:", window.TEAMS);
+            console.log("✅ 項目名單:", window.ITEMS);
+
+            createJudgeButtons(); // 資料載入完畢後，產生按鈕
+            showLoading(false); // 隱藏 Loading 畫面
+        } catch (error) {
+            console.error("❌ 資料載入失敗:", error);
+            showLoading(false);
+        }
+    }
 
     let currentJudge = null;
     let currentTeam = null;
@@ -297,10 +320,15 @@
         });
     }
 
+
+    function formatTime(timeString) {
+        return timeString.padStart(5, '0'); // 確保時間格式為 "HH:mm"
+    }
+
     function checkTimeSlot() {
         const now = moment().tz("Asia/Taipei");
         const currentDate = now.format('YYYY/MM/DD');
-        const currentTime = now.format('HH:mm');
+        const currentTime = now.format('HH:mm'); // 確保格式為 "HH:mm"
 
         const availableItem = ITEMS.find(item => {
             return item.date === currentDate &&
@@ -319,6 +347,10 @@
 
     function createJudgeButtons() {
         const container = document.getElementById('judgeButtons');
+        if (!window.JUDGES || window.JUDGES.length === 0) {
+            console.error("❌ JUDGES 資料未載入");
+            return;
+        }
         container.innerHTML = '';
         JUDGES.forEach((judge, index) => {
             const btn = document.createElement('button');
@@ -328,6 +360,7 @@
             container.appendChild(btn);
         });
     }
+
 
     function createTeamButtons() {
         const container = document.getElementById('teamButtons');
@@ -373,6 +406,12 @@
         showSection('teamSection');
     }
 
+    function showLoading(isLoading) {
+        const loadingOverlay = document.getElementById("loadingOverlay");
+        loadingOverlay.style.display = isLoading ? "flex" : "none";
+    }
+
+
     async function submitScore() {
         if (!checkTimeSlot()) return;
 
@@ -396,7 +435,7 @@
         document.getElementById('loadingOverlay').style.display = 'flex';
 
         try {
-            await fetch(SHEET_URL, {
+            await fetch(SHEET_API_URL, {
                 method: 'POST',
                 mode: 'no-cors',
                 headers: {
@@ -423,13 +462,16 @@
         }
     }
 
-    window.onload = function () {
+    window.onload = async function () {
+        showLoading(true); // 先顯示 Loading 畫面
+        await fetchAllData(); // 確保載入資料後才繼續
         moment.tz.setDefault("Asia/Taipei");
-        createJudgeButtons();
         updateTimeDisplays();
         setInterval(updateTimeDisplays, 1000);
         checkTimeSlot(); // 頁面載入時檢查是否在時段內
+        showLoading(false); // 隱藏 Loading 畫面
     };
+
 
     // 支援 Enter 鍵提交
     document.addEventListener('keypress', function (e) {
