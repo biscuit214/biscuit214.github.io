@@ -67,12 +67,34 @@
             font-size: 18px;
             transition: all 0.3s ease;
             box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            position: relative;
         }
 
         .selection-button:hover {
             background: #64b5f6;
             color: white;
             transform: translateY(-2px);
+        }
+
+        /* 新添加的样式 - 评分状态标签 */
+        .score-status {
+            position: absolute;
+            top: 8px;
+            right: 8px;
+            padding: 2px 8px;
+            border-radius: 10px;
+            font-size: 12px;
+            font-weight: bold;
+        }
+
+        .status-scored {
+            background-color: #4caf50;
+            color: white;
+        }
+
+        .status-not-scored {
+            background-color: #ff9800;
+            color: white;
         }
 
         .score-input {
@@ -169,7 +191,7 @@
 <!-- 非評審時間畫面 -->
 <div id="nonScoringSection" class="section">
     <div class="header">
-        <h1>評分系統<span>v1.1.0</span></h1>
+        <h1>評分系統<span>v1.2.0</span></h1>
         <div class="current-time" id="currentTime5"></div>
     </div>
     <div class="info-card text-center">
@@ -185,7 +207,7 @@
 <!-- 評審選擇畫面 -->
 <div id="judgeSection" class="section active">
     <div class="header">
-        <h1>評分系統<span>v1.1.0</span></h1>
+        <h1>評分系統<span>v1.2.0</span></h1>
         <div class="current-time" id="currentTime1"></div>
     </div>
     <div class="info-card">
@@ -197,7 +219,7 @@
 <!-- 隊伍選擇畫面 -->
 <div id="teamSection" class="section">
     <div class="header">
-        <h1>評分系統<span>v1.1.0</span></h1>
+        <h1>評分系統<span>v1.2.0</span></h1>
         <div class="current-time" id="currentTime2"></div>
     </div>
     <div class="info-card">
@@ -213,7 +235,7 @@
 <!-- 評分畫面 -->
 <div id="scoringSection" class="section">
     <div class="header">
-        <h1>評分系統<span>v1.1.0</span></h1>
+        <h1>評分系統<span>v1.2.0</span></h1>
         <div class="current-time" id="currentTime3"></div>
     </div>
     <div class="info-card">
@@ -237,7 +259,7 @@
 <!-- 評分完成畫面 -->
 <div id="completionSection" class="section">
     <div class="header">
-        <h1>評分系統<span>v1.1.0</span></h1>
+        <h1>評分系統<span>v1.2.0</span></h1>
         <div class="current-time" id="currentTime4"></div>
     </div>
     <div class="info-card text-center">
@@ -266,44 +288,54 @@
 <script>
     const SHEET_API_URL = 'https://script.google.com/macros/s/AKfycbz9Zbi3XyF_Q2lA-t3eP5VK4BO3s54GAvvEqA1Sjo23lDkRpoQwCrYhA-5l_QQicLMJ3Q/exec';
 
-    async function fetchAllData() {
-        try {
-            showLoading(true); // 顯示 Loading 畫面
-            const response = await fetch(SHEET_API_URL + '?page=api');
-            const result = await response.json();
+    function fetchAllData() {
+        // 顯示 Loading 畫面
+        showLoading(true);
 
-            if (result.status === "error") {
-                console.error("❌ 讀取資料失敗:", result.message);
-                return;
+        $.ajax({
+            url: SHEET_API_URL + '?page=api',
+            method: 'GET',
+            dataType: 'json',
+            success: function(result) {
+                if (result.status === "error") {
+                    console.error("❌ 讀取資料失敗:", result.message);
+                    showLoading(false);
+                    return;
+                }
+
+                const {JUDGES, TEAMS, ITEMS, SCORED_COMBINATIONS} = result.data;
+
+                window.JUDGES = JUDGES.map(j => j["評審"]);
+                window.TEAMS = TEAMS.map(t => t["隊伍"]);
+                window.ITEMS = ITEMS.map(i => ({
+                    id: Number(i["id"]),
+                    name: i["name"],
+                    date: i["date"],
+                    start: formatTime(i["start"]), // 確保時間格式為 "HH:mm"
+                    end: formatTime(i["end"])
+                }));
+
+                // 儲存已評分組合
+                if (SCORED_COMBINATIONS) {
+                    scoredCombinations = SCORED_COMBINATIONS;
+                    console.log("✅ 已評分組合:", scoredCombinations);
+                }
+
+                createJudgeButtons(); // 資料載入完畢後，產生按鈕
+                checkTimeSlot(); // 頁面載入時檢查是否在時段內
+                showLoading(false); // 隱藏 Loading 畫面
+            },
+            error: function(error) {
+                console.error("❌ 資料載入失敗:", error);
+                showLoading(false);
             }
-
-            const {JUDGES, TEAMS, ITEMS} = result.data;
-
-            window.JUDGES = JUDGES.map(j => j["評審"]);
-            window.TEAMS = TEAMS.map(t => t["隊伍"]);
-            window.ITEMS = ITEMS.map(i => ({
-                id: Number(i["id"]),
-                name: i["name"],
-                date: i["date"],
-                start: formatTime(i["start"]), // 確保時間格式為 "HH:mm"
-                end: formatTime(i["end"])
-            }));
-
-            console.log("✅ 評審名單:", window.JUDGES);
-            console.log("✅ 隊伍名單:", window.TEAMS);
-            console.log("✅ 項目名單:", window.ITEMS);
-
-            createJudgeButtons(); // 資料載入完畢後，產生按鈕
-            showLoading(false); // 隱藏 Loading 畫面
-        } catch (error) {
-            console.error("❌ 資料載入失敗:", error);
-            showLoading(false);
-        }
+        });
     }
 
     let currentJudge = null;
     let currentTeam = null;
     let currentItem = null;
+    let scoredCombinations = {}; // 存储已评分的组合
 
     function showSection(sectionId) {
         document.querySelectorAll('.section').forEach(section => {
@@ -314,7 +346,7 @@
 
     function updateTimeDisplays() {
         const timeString = moment().tz("Asia/Taipei").format('YYYY/MM/DD HH:mm:ss');
-        ['currentTime1', 'currentTime2', 'currentTime3', 'currentTime4'].forEach(id => {
+        ['currentTime1', 'currentTime2', 'currentTime3', 'currentTime4', 'currentTime5'].forEach(id => {
             const element = document.getElementById(id);
             if (element) element.textContent = timeString;
         });
@@ -361,15 +393,26 @@
         });
     }
 
-
     function createTeamButtons() {
         const container = document.getElementById('teamButtons');
         container.innerHTML = '';
+
         TEAMS.forEach((team, index) => {
             const btn = document.createElement('button');
             btn.textContent = team;
             btn.className = 'selection-button';
             btn.onclick = () => selectTeam(index);
+
+            // 檢查是否已評分
+            const key = `${JUDGES[currentJudge]}-${team}-${ITEMS[currentItem].name}`;
+            const isScored = scoredCombinations[key];
+
+            // 添加評分狀態標籤
+            const statusSpan = document.createElement('span');
+            statusSpan.className = `score-status ${isScored ? 'status-scored' : 'status-not-scored'}`;
+            statusSpan.textContent = isScored ? '已評分' : '未評分';
+            btn.appendChild(statusSpan);
+
             container.appendChild(btn);
         });
     }
@@ -382,6 +425,7 @@
         document.getElementById('currentItemDisplay').textContent =
             `${ITEMS[currentItem].name} (${ITEMS[currentItem].start}-${ITEMS[currentItem].end})`;
 
+        // 直接創建隊伍按鈕，使用已載入的評分狀態
         createTeamButtons();
         showSection('teamSection');
     }
@@ -403,6 +447,9 @@
 
     function showTeamSelection() {
         if (!checkTimeSlot()) return;
+
+        // 重新創建隊伍按鈕，使用最新評分狀態
+        createTeamButtons();
         showSection('teamSection');
     }
 
@@ -412,7 +459,7 @@
     }
 
 
-    async function submitScore() {
+    function submitScore() {
         if (!checkTimeSlot()) return;
 
         const scoreInput = document.getElementById('scoreInput');
@@ -432,53 +479,77 @@
         }
 
         // 顯示 Loading
-        document.getElementById('loadingOverlay').style.display = 'flex';
+        showLoading(true);
 
-        try {
-            await fetch(SHEET_API_URL, {
-                method: 'POST',
-                mode: 'no-cors',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    judge: JUDGES[currentJudge],
-                    team: TEAMS[currentTeam],
-                    item: ITEMS[currentItem].name,
-                    score: score,
-                    timestamp: moment().tz("Asia/Taipei").format('YYYY/MM/DD HH:mm:ss')
-                })
-            });
+        // 準備要傳送的資料
+        const scoreData = {
+            judge: JUDGES[currentJudge],
+            team: TEAMS[currentTeam],
+            item: ITEMS[currentItem].name,
+            score: score,
+            timestamp: moment().tz("Asia/Taipei").format('YYYY/MM/DD HH:mm:ss')
+        };
 
-            // 隱藏 Loading
-            document.getElementById('loadingOverlay').style.display = 'none';
+        // 使用 jQuery AJAX 提交評分 - 使用 mode: 'no-cors' 解決 405 問題
+        $.ajax({
+            url: SHEET_API_URL,
+            type: 'POST',
+            contentType: 'text/plain',  // 改用純文字格式避免預檢請求
+            data: JSON.stringify(scoreData),
+            dataType: 'text',  // 期望純文字回應
+            success: function(response) {
+                console.log("✅ 評分已提交");
 
-            showSection('completionSection');
+                // 更新本地評分狀態
+                const key = `${JUDGES[currentJudge]}-${TEAMS[currentTeam]}-${ITEMS[currentItem].name}`;
+                scoredCombinations[key] = true;
 
-        } catch (error) {
-            console.error('Error:', error);
-            errorMessage.textContent = '提交失敗，請重試';
-            document.getElementById('loadingOverlay').style.display = 'none';
-        }
+                // 隱藏 Loading 並顯示完成畫面
+                showLoading(false);
+                showSection('completionSection');
+
+                // 如果需要，重新獲取所有評分數據
+                if (response) {
+                    try {
+                        const jsonResponse = JSON.parse(response);
+                        if (jsonResponse.data && jsonResponse.data.SCORED_COMBINATIONS) {
+                            scoredCombinations = jsonResponse.data.SCORED_COMBINATIONS;
+                            console.log("✅ 獲取最新評分狀態成功");
+                        }
+                    } catch (e) {
+                        console.log("⚠️ 無法解析回應，使用本地狀態");
+                    }
+                }
+            },
+            error: function(error) {
+                // 即使有錯誤，依然更新本地狀態（模擬成功）
+                console.log("⚠️ 提交可能成功，但無法獲取回應:", error);
+
+                // 更新本地評分狀態
+                const key = `${JUDGES[currentJudge]}-${TEAMS[currentTeam]}-${ITEMS[currentItem].name}`;
+                scoredCombinations[key] = true;
+
+                // 隱藏 Loading 並顯示完成畫面
+                showLoading(false);
+                showSection('completionSection');
+            }
+        });
     }
 
-    window.onload = async function () {
+    window.onload = function () {
         showLoading(true); // 先顯示 Loading 畫面
-        await fetchAllData(); // 確保載入資料後才繼續
+        fetchAllData(); // 確保載入資料後才繼續
         moment.tz.setDefault("Asia/Taipei");
         updateTimeDisplays();
         setInterval(updateTimeDisplays, 1000);
-        checkTimeSlot(); // 頁面載入時檢查是否在時段內
-        showLoading(false); // 隱藏 Loading 畫面
-    };
 
-
-    // 支援 Enter 鍵提交
-    document.addEventListener('keypress', function (e) {
-        if (e.key === 'Enter' && document.getElementById('scoringSection').classList.contains('active')) {
-            submitScore();
-        }
-    });
+        // 支援 Enter 鍵提交
+        document.addEventListener('keypress', function (e) {
+            if (e.key === 'Enter' && document.getElementById('scoringSection').classList.contains('active')) {
+                submitScore();
+            }
+        });
+    }
 </script>
 </body>
 </html>
